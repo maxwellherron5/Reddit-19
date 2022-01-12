@@ -4,3 +4,5 @@ praw
 pandas
 matplotlib
 numpy
+black
+pre-commit
