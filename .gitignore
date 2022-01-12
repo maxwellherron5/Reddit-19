@@ -6,6 +6,7 @@ __pycache__
 *.egg-info
 source.bat
 layer
+.env
 
 # CDK asset staging directory
 .cdk.staging
