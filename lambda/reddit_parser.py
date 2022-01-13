@@ -1,7 +1,9 @@
 import json
-import praw
 import datetime
 import os
+
+import praw
+import boto3
 
 from logger import get_logger
 
@@ -48,7 +50,7 @@ def bot_login():
     return bot
 
 
-def run_bot(bot):
+def run_bot(bot: praw.Reddit) -> dict:
     """
     Iterates through all subreddits in the subreddit list. It then parses through
     the 'new' section of the subreddit, and views all posts that are from the
@@ -81,23 +83,27 @@ def run_bot(bot):
     return output
 
 
-# def write_output(output):
-#     """
-#     Writes the output dictionary generated from run_bot() to the existing CSV
-#     """
-#     with open("/Users/maxwell/Documents/workspace/CoronaScan/results.csv", 'a') as f:
-#         writer = csv.writer(f)
-#         logger.info("Now writing output to results.csv . . .")
-#         values = list(output.values())
-#         values.insert(0, datetime.date.today())
-#         writer.writerow(values)
-#         logger.info("Finished writing output!")
+def write_output(result: dict):
+    """
+    Writes the output dictionary generated from run_bot() to the existing CSV
+    """
+    dynamodb = boto3.resource("dynamodb")
+    table = dynamodb.Table("KeywordCounts")
+    logger.info("Writing output to DynamoDB...")
+    table.put_item(
+        Item={
+            "results": json.dumps(result),
+            "timestamp": datetime.datetime.now().isoformat(),
+        }
+    )
+    logger.info(f"Successfully wrote output to DynamoDB")
 
 
 def handler(event, context):
     logger.info("request: {}".format(json.dumps(event)))
     bot = bot_login()
     output = run_bot(bot)
+    write_output(output)
     return {
         "statusCode": 200,
         "headers": {"Content-Type": "text/plain"},

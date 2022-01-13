@@ -6,3 +6,4 @@ matplotlib
 numpy
 black
 pre-commit
+boto3
