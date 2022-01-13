@@ -3,6 +3,9 @@ import praw
 import datetime
 import os
 
+from logger import get_logger
+
+logger = get_logger()
 
 subreddits = (
     "worldnews",
@@ -26,11 +29,11 @@ subreddits = (
     "Conservative",
     "nottheonion",
     "LateStageCapitalism",
+    "todayilearned",
+    "futurology",
+    "technology",
+    "travel",
 )
-
-# This is the day that data collection began. It will be used to calculate
-# the offset necessary to determine which row of the CSV to plot.
-start_day = datetime.date(2020, 4, 28)
 
 
 def bot_login():
@@ -54,16 +57,8 @@ def run_bot(bot):
     to the subreddit key in the dictionary.
     """
     output = {key: None for key in subreddits}
-    print("*" * 80)
-    print(
-        " " * 10
-        + "Running COVID-19 keyword mention scan for "
-        + str(datetime.date.today())
-    )
-    print("*" * 80 + "\n")
-    print("-" * 80)
     for subreddit in subreddits:
-        print("Scanning r/" + subreddit + "\n")
+        logger.info(f"Scanning r/{subreddit}")
         count = 0
         current = bot.subreddit(subreddit)
         cutoff_time = datetime.date.today() - datetime.timedelta(1)
@@ -79,14 +74,11 @@ def run_bot(bot):
                 )
                 if keyword_check:
                     count += 1
-                    print(submission.title + "\n")
         output[subreddit] = count
-        print(
-            "Total mentions of COVID-19 related keywords in r/" + subreddit + ":", count
+        logger.info(
+            f"Total mentions of COVID-19 related keywords in r/{subreddit}: {count}"
         )
-        print("-" * 80)
     return output
-    # write_output(output)
 
 
 # def write_output(output):
@@ -95,25 +87,15 @@ def run_bot(bot):
 #     """
 #     with open("/Users/maxwell/Documents/workspace/CoronaScan/results.csv", 'a') as f:
 #         writer = csv.writer(f)
-#         print("Now writing output to results.csv . . .")
+#         logger.info("Now writing output to results.csv . . .")
 #         values = list(output.values())
 #         values.insert(0, datetime.date.today())
 #         writer.writerow(values)
-#         print("Finished writing output!")
-
-
-def get_offset():
-    """
-    Calculates the integer offset between the start day of data collection,
-    and the current day. This is then used to determine which line of the CSV
-    to generate the plot from.
-    """
-    offset = datetime.date.today() - start_day
-    return int(offset.days) - 4
+#         logger.info("Finished writing output!")
 
 
 def handler(event, context):
-    print("request: {}".format(json.dumps(event)))
+    logger.info("request: {}".format(json.dumps(event)))
     bot = bot_login()
     output = run_bot(bot)
     return {
