@@ -99,7 +99,7 @@ def write_output(result: dict):
     table.put_item(
         Item={
             "results": json.dumps(result),
-            "timestamp": datetime.datetime.now().isoformat(),
+            "timestamp": datetime.today().strftime("%Y-%m-%d"),
         }
     )
     logger.info(f"Successfully wrote output to DynamoDB")
