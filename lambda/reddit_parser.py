@@ -1,5 +1,6 @@
 import json
 import datetime
+from datetime import datetime
 import os
 
 import praw
@@ -38,7 +39,7 @@ subreddits = (
 )
 
 
-def bot_login():
+def bot_login() -> praw.Reddit:
     """This function logs in the bot account that I am using to access Reddit."""
     bot = praw.Reddit(
         username=os.environ.get("BOT_USERNAME"),
@@ -63,11 +64,15 @@ def run_bot(bot: praw.Reddit) -> dict:
         logger.info(f"Scanning r/{subreddit}")
         count = 0
         current = bot.subreddit(subreddit)
-        cutoff_time = datetime.date.today() - datetime.timedelta(1)
-        cutoff_time = float(cutoff_time.strftime("%s"))
         for submission in current.new():
-            if submission.created_utc > cutoff_time:
-                current_title = submission.title.lower()
+
+            current_title = submission.title.lower()
+            post_time = submission.created_utc
+            submission_date = datetime.utcfromtimestamp(post_time)
+
+            current_time = datetime.utcnow()
+            time_delta = current_time - submission_date
+            if "day" not in str(time_delta):
                 keyword_check = (
                     "coronavirus" in current_title
                     or "covid" in current_title
@@ -76,6 +81,7 @@ def run_bot(bot: praw.Reddit) -> dict:
                 )
                 if keyword_check:
                     count += 1
+
         output[subreddit] = count
         logger.info(
             f"Total mentions of COVID-19 related keywords in r/{subreddit}: {count}"
@@ -109,3 +115,8 @@ def handler(event, context):
         "headers": {"Content-Type": "text/plain"},
         "body": f"{output}",
     }
+
+
+if __name__ == "__main__":
+    bot = bot_login()
+    output = run_bot(bot)
