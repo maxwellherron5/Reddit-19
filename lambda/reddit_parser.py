@@ -1,6 +1,7 @@
 import json
 import datetime
-from datetime import datetime
+
+# from datetime import datetime
 import os
 import urllib3
 
@@ -39,6 +40,20 @@ subreddits = (
     "travel",
 )
 
+keywords = (
+    "coronavirus",
+    "covid",
+    "pandemic",
+    "quarantine",
+    "lockdown",
+    "variant",
+    "outbreak",
+    "virus",
+    "epidemic",
+    "delta",
+    "omicron",
+)
+
 
 def bot_login() -> praw.Reddit:
     """This function logs in the bot account that I am using to access Reddit."""
@@ -74,13 +89,7 @@ def run_bot(bot: praw.Reddit) -> dict:
             current_time = datetime.utcnow()
             time_delta = current_time - submission_date
             if "day" not in str(time_delta):
-                keyword_check = (
-                    "coronavirus" in current_title
-                    or "covid" in current_title
-                    or "pandemic" in current_title
-                    or "quarantine" in current_title
-                )
-                if keyword_check:
+                if current_title in keywords:
                     count += 1
 
         output[subreddit] = count
@@ -108,10 +117,16 @@ def write_output(result: dict):
 
 def get_historical_data(subreddit):
     http = urllib3.PoolManager()
-    a = 1334426439
-    b = 1339696839
-    endpoint = f"https://api.pushshift.io/reddit/submission/search/?after={a}&before={b}&sort_type=score&sort=desc&subreddit={subreddit}"
-
+    a = datetime.datetime.utcnow()
+    b = a - datetime.timedelta(days=1)
+    c = int(a.timestamp())
+    d = int(b.timestamp())
+    # End
+    # a = 1642460402
+    # Start
+    # b = 1642374002
+    endpoint = f"https://api.pushshift.io/reddit/submission/search/?after={d}&before={c}&sort_type=score&sort=desc&subreddit={subreddit}"
+    breakpoint()
     logger.info(f"Request: {endpoint}")
     res = http.request("GET", endpoint)
     logger.info(f"Response: {res.data}")
@@ -130,6 +145,6 @@ def handler(event, context):
 
 
 if __name__ == "__main__":
-    get_historical_data("worldnews")
+    get_historical_data("memes")
     # bot = bot_login()
     # output = run_bot(bot)
