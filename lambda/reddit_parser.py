@@ -2,6 +2,7 @@ import json
 import datetime
 from datetime import datetime
 import os
+import urllib3
 
 import praw
 import boto3
@@ -105,6 +106,17 @@ def write_output(result: dict):
     logger.info(f"Successfully wrote output to DynamoDB")
 
 
+def get_historical_data(subreddit):
+    http = urllib3.PoolManager()
+    a = 1334426439
+    b = 1339696839
+    endpoint = f"https://api.pushshift.io/reddit/submission/search/?after={a}&before={b}&sort_type=score&sort=desc&subreddit={subreddit}"
+
+    logger.info(f"Request: {endpoint}")
+    res = http.request("GET", endpoint)
+    logger.info(f"Response: {res.data}")
+
+
 def handler(event, context):
     logger.info("request: {}".format(json.dumps(event)))
     bot = bot_login()
@@ -118,5 +130,6 @@ def handler(event, context):
 
 
 if __name__ == "__main__":
-    bot = bot_login()
-    output = run_bot(bot)
+    get_historical_data("worldnews")
+    # bot = bot_login()
+    # output = run_bot(bot)
