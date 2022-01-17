@@ -1,7 +1,6 @@
 import json
 import datetime
-
-# from datetime import datetime
+import time
 import os
 import requests
 
@@ -82,8 +81,7 @@ def run_bot(bot: praw.Reddit) -> dict:
         subreddit_data = get_historical_data(subreddit).get("data", None)
         if subreddit_data:
             logger.info(subreddit_data)
-            for submission in get_historical_data(subreddit):
-
+            for submission in subreddit_data:
                 title = submission["title"].lower()
                 if any(keyword in title for keyword in keywords):
                     count += 1
@@ -115,13 +113,15 @@ def write_output(result: dict):
 
 
 def get_historical_data(subreddit):
-    """WIP"""
     end_time = datetime.datetime.utcnow()
     start_time = end_time - datetime.timedelta(days=1)
-    endpoint = f"https://api.pushshift.io/reddit/submission/search/?after={int(end_time.timestamp())}&before={int(start_time.timestamp())}&sort_type=score&sort=desc&subreddit={subreddit}"
+    endpoint = f"https://api.pushshift.io/reddit/submission/search/?after={int(start_time.timestamp())}&before={int(end_time.timestamp())}&sort_type=score&sort=desc&subreddit={subreddit}"
     logger.info(f"Request: {endpoint}")
     res = requests.get(endpoint)
     logger.info(res.status_code)
+    if res.status_code == 429:
+        time.sleep(20)
+        res = requests.get(endpoint)
     return res.json()
 
 
