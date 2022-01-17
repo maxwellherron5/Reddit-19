@@ -3,7 +3,7 @@ import datetime
 
 # from datetime import datetime
 import os
-import urllib3
+import requests
 
 import praw
 import boto3
@@ -79,23 +79,22 @@ def run_bot(bot: praw.Reddit) -> dict:
     for subreddit in subreddits:
         logger.info(f"Scanning r/{subreddit}")
         count = 0
-        current = bot.subreddit(subreddit)
-        for submission in current.new():
+        subreddit_data = get_historical_data(subreddit).get("data", None)
+        if subreddit_data:
+            logger.info(subreddit_data)
+            for submission in get_historical_data(subreddit):
 
-            current_title = submission.title.lower()
-            post_time = submission.created_utc
-            submission_date = datetime.utcfromtimestamp(post_time)
-
-            current_time = datetime.utcnow()
-            time_delta = current_time - submission_date
-            if "day" not in str(time_delta):
-                if current_title in keywords:
+                title = submission["title"].lower()
+                if any(keyword in title for keyword in keywords):
                     count += 1
 
-        output[subreddit] = count
-        logger.info(
-            f"Total mentions of COVID-19 related keywords in r/{subreddit}: {count}"
-        )
+            output[subreddit] = count
+            logger.info(
+                f"Total mentions of COVID-19 related keywords in r/{subreddit}: {count}"
+            )
+        else:
+            output[subreddit] = 0
+    logger.info(f"Output: {output}")
     return output
 
 
@@ -116,20 +115,14 @@ def write_output(result: dict):
 
 
 def get_historical_data(subreddit):
-    http = urllib3.PoolManager()
-    a = datetime.datetime.utcnow()
-    b = a - datetime.timedelta(days=1)
-    c = int(a.timestamp())
-    d = int(b.timestamp())
-    # End
-    # a = 1642460402
-    # Start
-    # b = 1642374002
-    endpoint = f"https://api.pushshift.io/reddit/submission/search/?after={d}&before={c}&sort_type=score&sort=desc&subreddit={subreddit}"
-    breakpoint()
+    """WIP"""
+    end_time = datetime.datetime.utcnow()
+    start_time = end_time - datetime.timedelta(days=1)
+    endpoint = f"https://api.pushshift.io/reddit/submission/search/?after={int(end_time.timestamp())}&before={int(start_time.timestamp())}&sort_type=score&sort=desc&subreddit={subreddit}"
     logger.info(f"Request: {endpoint}")
-    res = http.request("GET", endpoint)
-    logger.info(f"Response: {res.data}")
+    res = requests.get(endpoint)
+    logger.info(res.status_code)
+    return res.json()
 
 
 def handler(event, context):
@@ -145,6 +138,6 @@ def handler(event, context):
 
 
 if __name__ == "__main__":
-    get_historical_data("memes")
-    # bot = bot_login()
-    # output = run_bot(bot)
+    # get_historical_data("memes")
+    bot = bot_login()
+    output = run_bot(bot)
